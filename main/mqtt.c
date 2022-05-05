@@ -26,11 +26,14 @@
  * - we are connected to the AP with an IP
  * - we failed to connect after the maximum amount of retries */
 
-#define GPIO_OUTPUT_IO_18    18
-#define GPIO_OUTPUT_IO_19    19
-#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_18) | (1ULL<<GPIO_OUTPUT_IO_19))
+
+
+#define GPIO_OUTPUT_IO_3     3
+#define GPIO_OUTPUT_IO_4     4
 #define MAXIMUM_RETRY 10
 #define WIFI_FAIL_BIT      BIT1
+#define CONNECTED_BIT      BIT0
+#define ESPTOUCH_DONE_BIT  BIT1
 int retry = 0;
 
 esp_mqtt_client_handle_t client_init;
@@ -38,12 +41,6 @@ esp_mqtt_client_handle_t client_init;
 static const char *TAG = "ESP Relay";
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t s_wifi_event_group;
-
-/* The event group allows multiple bits for each event,
-   but we only care about one event - are we connected
-   to the AP with an IP? */
-static const int CONNECTED_BIT = BIT0;
-static const int ESPTOUCH_DONE_BIT = BIT1;
 
 
 static void smartconfig_task(void * parm);
@@ -185,13 +182,13 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             break;
         case MQTT_EVENT_DATA:
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-            int switc = gpio_get_level(GPIO_OUTPUT_IO_18);
+            int switc = gpio_get_level(GPIO_OUTPUT_IO_4);
             if( switc == 1){
-                gpio_set_level(GPIO_OUTPUT_IO_18, 0);
+                gpio_set_level(GPIO_OUTPUT_IO_4, 0);
                 msg_id = esp_mqtt_client_publish(client, "mqtt/bedroom/power_relay/1", "OFF", 0, 0, false);
             } else {
                 msg_id = esp_mqtt_client_publish(client, "mqtt/bedroom/power_relay/1", "ON", 0, 0, false);
-                gpio_set_level(GPIO_OUTPUT_IO_18, 1);
+                gpio_set_level(GPIO_OUTPUT_IO_4, 1);
             }
             break;
         case MQTT_EVENT_ERROR:

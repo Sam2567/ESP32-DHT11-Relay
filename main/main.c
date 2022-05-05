@@ -1,4 +1,3 @@
-
 #include "driver/timer.h"
 #include "mqtt_client.h"
 #include "dht11.h"
@@ -6,8 +5,9 @@
 #include "mqtt.c"
 
 
-#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_18) | (1ULL<<GPIO_OUTPUT_IO_19))
-#define GPIO_OUTPUT_IO_18    18
+#define GPIO_OUTPUT_IO_3     3
+#define GPIO_OUTPUT_IO_4     4
+#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_4) | (1ULL<<GPIO_OUTPUT_IO_3) | (1ULL<<GPIO_OUTPUT_IO_19))
 #define GPIO_OUTPUT_IO_19    19
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
@@ -49,7 +49,7 @@ void conf_gpio(){
     //disable interrupt
     io_conf.intr_type = GPIO_INTR_DISABLE;
     //set as output mode
-    io_conf.mode = GPIO_MODE_INPUT_OUTPUT ;
+    io_conf.mode = GPIO_MODE_INPUT_OUTPUT;
     //bit mask of the pins that you want to set,e.g.GPIO18/19
     io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
     //disable pull-down mode
@@ -87,10 +87,6 @@ static void tg_timer_init(int group, int timer, bool auto_reload, int timer_inte
     timer_start(group, timer);
 }
 
-static void reset_event_handler(void* arg, esp_event_base_t event_base,
-                                int32_t event_id, void* event_data){
-
-}
 
 void app_main(void)
 {
