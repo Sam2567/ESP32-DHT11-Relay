@@ -165,7 +165,6 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 
             break;
         case MQTT_EVENT_DISCONNECTED:
-            esp_wifi_connect();
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
             msg_id = esp_mqtt_client_subscribe(client, "mqtt/bedroom/power_relay/control/1", 0);
             
