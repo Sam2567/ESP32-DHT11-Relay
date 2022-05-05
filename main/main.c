@@ -6,20 +6,18 @@
 #include "mqtt.c"
 
 
-
-
 #define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_18) | (1ULL<<GPIO_OUTPUT_IO_19))
 #define GPIO_OUTPUT_IO_18    18
 #define GPIO_OUTPUT_IO_19    19
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 TaskHandle_t TaskHandle_dht;
-
+RTC_DATA_ATTR int bootCount = 0;
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
 esp_mqtt_client_handle_t client_init;
 
-static const char *TAG = "ESP Relay";
+
 
 
 
@@ -89,6 +87,11 @@ static void tg_timer_init(int group, int timer, bool auto_reload, int timer_inte
     timer_start(group, timer);
 }
 
+static void reset_event_handler(void* arg, esp_event_base_t event_base,
+                                int32_t event_id, void* event_data){
+
+}
+
 void app_main(void)
 {
     
@@ -98,14 +101,12 @@ void app_main(void)
       ESP_ERROR_CHECK(nvs_flash_erase());
       ret = nvs_flash_init();
     }
-    
+    initialise_wifi();
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
-    wifi_init_sta();
     mqtt_app_start();
     tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
-   
     
 }
     

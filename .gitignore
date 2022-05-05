@@ -119,3 +119,8 @@ main/component.mk
 main/Kconfig.projbuild
 sdkconfig.old
 sdkconfig
+*.log
+build/bootloader/project_elf_src_esp32c3.c
+build/esp-idf/esp32c3/esp32c3_out.ld
+build/esp-idf/esp32c3/ld/esp32c3.project.ld
+build/project_elf_src_esp32c3.c
