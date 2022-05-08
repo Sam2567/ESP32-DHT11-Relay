@@ -98,11 +98,13 @@ void app_main(void)
       ret = nvs_flash_init();
     }
     initialise_wifi();
+    xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 6, NULL);
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
     tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
+
     
 }
     

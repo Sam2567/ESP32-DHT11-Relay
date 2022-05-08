@@ -49,7 +49,17 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
+        if (retry < MAXIMUM_RETRY) {
+            esp_wifi_connect();
+            retry++;
+            xEventGroupClearBits(s_wifi_event_group, CONNECTED_BIT);
+            ESP_LOGI(TAG, "Retry to connect to the WIFI");
+        } else {
+            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            ESP_LOGI(TAG,"SC_task start");
+        }
+        ESP_LOGI(TAG,"Connect to the WIFI fail");
+        
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         if (retry < MAXIMUM_RETRY) {
             esp_wifi_connect();
@@ -58,9 +68,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Retry to connect to the WIFI");
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
-            xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 3, NULL);
+            ESP_LOGI(TAG,"Connect to the WIFI fail");
         }
-        ESP_LOGI(TAG,"Connect to the WIFI fail");
         
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         xEventGroupSetBits(s_wifi_event_group, CONNECTED_BIT);
@@ -217,7 +226,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = "mqtt://192.168.3.49",
+        .uri = "mqtt://192.168.3.56",
         .username = "mqtt",
         .password = "mqtt",
         .event_handle = mqtt_event_handler,
