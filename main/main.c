@@ -3,14 +3,16 @@
 #include "dht11.h"
 #include "cJSON.h"
 #include "mqtt.c"
+#include "http.c"
 
 
 #define GPIO_OUTPUT_IO_3     3
 #define GPIO_OUTPUT_IO_4     4
 #define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_4) | (1ULL<<GPIO_OUTPUT_IO_3) | (1ULL<<GPIO_OUTPUT_IO_19))
 #define GPIO_OUTPUT_IO_19    19
-#define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
-#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
+#define TIMER_DIVIDER        80  //  Hardware timer clock divider
+#define TIMER_SCALE          1000000  // convert counter value to seconds
+#define MQTT_DHT11 "mqtt/dinner/power_relay/dht11/1"
 TaskHandle_t TaskHandle_dht;
 RTC_DATA_ATTR int bootCount = 0;
 /* FreeRTOS event group to signal when we are connected*/
@@ -25,7 +27,7 @@ esp_mqtt_client_handle_t client_init;
 void dht11(){
     if(DHT11_read().status != 0){
         ESP_LOGI(TAG, "DHT_ERROR");
-        ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", "N/A", 0, 0, true));
+        ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, MQTT_DHT11, "N/A", 0, 0, true));
     } else {
         int temperature = DHT11_read().temperature;
         int humidity = DHT11_read().humidity;
@@ -37,7 +39,7 @@ void dht11(){
             cJSON_AddNumberToObject(root, "temperature", temperature);
             cJSON_AddNumberToObject(root, "humidity", humidity);
             char *send_data = cJSON_Print(root);
-            ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
+            ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, MQTT_DHT11, send_data, 0, 0, true));
             cJSON_Delete(root);
         }
     }
@@ -64,11 +66,11 @@ void conf_gpio(){
 static bool IRAM_ATTR timer_group_isr_callback(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
-    xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,TaskHandle_dht,0);
+    xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,TaskHandle_dht,1);
     return high_task_awoken == pdTRUE; // return whether we need to yield at the end of ISR
 }
 
-static void tg_timer_init(int group, int timer, bool auto_reload, int timer_interval_sec)
+static void tg0_timer_init(int group, int timer, bool auto_reload, int timer_interval_sec)
 {
     /* Select and initialize basic parameters of the timer */
     timer_config_t config =  {
@@ -81,7 +83,7 @@ static void tg_timer_init(int group, int timer, bool auto_reload, int timer_inte
     timer_init(group, timer, &config);
     timer_set_counter_value(group, timer, 0);
     /* Configure the alarm value and the interrupt on alarm. */
-    timer_set_alarm_value(group, timer, timer_interval_sec * TIMER_SCALE);
+    timer_set_alarm_value(group, timer, timer_interval_sec*TIMER_SCALE);
     timer_enable_intr(group, timer);
     timer_isr_callback_add(group, timer, timer_group_isr_callback, NULL, 0);
     timer_start(group, timer);
@@ -98,14 +100,12 @@ void app_main(void)
       ret = nvs_flash_init();
     }
     initialise_wifi();
-    xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 6, NULL);
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
-    tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
-
-    
+    start_webserver();
+    tg0_timer_init(TIMER_GROUP_0, TIMER_0, true, 1800);
 }
     
     
