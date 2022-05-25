@@ -33,11 +33,10 @@
 #define MQTT_STATUS "mqtt/bedroom/power_relay/1"
 
 
-
 int retry = 0;
 
 esp_mqtt_client_handle_t client_init;
-
+TaskHandle_t taskhandle_get_mqtt_server;
 static const char *TAG = "ESP Relay";
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t s_wifi_event_group;

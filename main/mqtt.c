@@ -1,5 +1,10 @@
 #include "mqtt.h"
-
+#include "http.c"
+/*Start a web server for mqtt server address update in case of mqtt server address change*/
+void mqtt_backup_server(void * pvParameters){
+    start_webserver();
+    vTaskDelete(taskhandle_get_mqtt_server);  
+}
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
@@ -131,6 +136,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+            xTaskCreatePinnedToCore (mqtt_backup_server,"server_task",3000, NULL,6,taskhandle_get_mqtt_server,1);
             msg_id = esp_mqtt_client_subscribe(client, MQTT_CONTROL, 0);
             
             break;
@@ -139,6 +145,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
             break;
         case MQTT_EVENT_UNSUBSCRIBED:
+            xTaskCreatePinnedToCore (mqtt_backup_server,"server_task",3000, NULL,6,taskhandle_get_mqtt_server,1);
             ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
             break;
         case MQTT_EVENT_PUBLISHED:
@@ -156,6 +163,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             }
             break;
         case MQTT_EVENT_ERROR:
+            xTaskCreatePinnedToCore (mqtt_backup_server,"server_task",3000, NULL,6,taskhandle_get_mqtt_server,1);
             ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
             if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
                 log_error_if_nonzero("reported from esp-tls", event->error_handle->esp_tls_last_esp_err);
