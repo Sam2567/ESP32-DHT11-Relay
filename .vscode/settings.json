@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "mqtt.h": "c",
-        "task.h": "c"
-    }
-}
