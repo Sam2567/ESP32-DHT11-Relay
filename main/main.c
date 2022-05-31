@@ -3,6 +3,7 @@
 #include "dht11.h"
 #include "cJSON.h"
 #include "mqtt.c"
+#include "http.c"
 
 
 #define GPIO_OUTPUT_IO_3     3
@@ -12,8 +13,7 @@
 #define TIMER_DIVIDER        80  //  Hardware timer clock divider
 #define TIMER_SCALE          1000000  // convert counter value to seconds
 #define MQTT_DHT11 "mqtt/dinner/power_relay/dht11/1"
-TaskHandle_t taskHandle_dht;
-
+TaskHandle_t TaskHandle_dht;
 RTC_DATA_ATTR int bootCount = 0;
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
@@ -43,7 +43,7 @@ void dht11(){
             cJSON_Delete(root);
         }
     }
-    vTaskDelete(taskHandle_dht);  
+    vTaskDelete(TaskHandle_dht);  
 }
 
 void conf_gpio(){
@@ -66,7 +66,7 @@ void conf_gpio(){
 static bool IRAM_ATTR timer_group_isr_callback(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
-    xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,taskHandle_dht,1);
+    xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,TaskHandle_dht,1);
     return high_task_awoken == pdTRUE; // return whether we need to yield at the end of ISR
 }
 
@@ -104,6 +104,7 @@ void app_main(void)
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
+    start_webserver();
     tg0_timer_init(TIMER_GROUP_0, TIMER_0, true, 1800);
 }
     

@@ -1,3 +1,4 @@
 #include "esp_http_server.h"
-#include "esp_log.h"
-char mqtt_address [100];
+
+inline size_t MIN(size_t a, size_t b);
+inline size_t MAX(size_t a, size_t b);

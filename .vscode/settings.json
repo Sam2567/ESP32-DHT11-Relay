@@ -1,8 +1,6 @@
 {
     "files.associations": {
         "mqtt.h": "c",
-        "task.h": "c",
-        "*.inc": "c",
-        "sstream": "c"
+        "task.h": "c"
     }
 }
