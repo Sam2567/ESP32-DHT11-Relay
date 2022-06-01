@@ -12,10 +12,11 @@
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 TaskHandle_t TaskHandle_dht;
-RTC_DATA_ATTR int bootCount = 0;
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
 esp_mqtt_client_handle_t client_init;
+int temp_copy = 0;
+int humidity_copy = 0;
 
 
 
@@ -29,11 +30,17 @@ void dht11(){
     } else {
         int temperature = DHT11_read().temperature;
         int humidity = DHT11_read().humidity;
+        int temp_value = abs(temp_copy - temperature);
+        int temp_humidity = abs(humidity_copy - humidity);
         if(!(temperature > 0 && humidity > 0 && temperature < 100 && humidity < 100)) {
-            printf("DHT Error");
+            printf("DHT invaild values");
+        } else if(!(temp_value >=1 && temp_humidity >=1)) {
+            printf("DHT Minor change");
         } else {
             printf("Temperature is %d \n", temperature);
             printf("Humidity is %d\n", humidity);
+            temp_copy = temperature;
+            humidity_copy = humidity;
             cJSON *root;
 	        root = cJSON_CreateObject();
             cJSON_AddNumberToObject(root, "temperature", temperature);
@@ -106,7 +113,7 @@ void app_main(void)
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
-    tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 60);
+    tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
 
 }
     
