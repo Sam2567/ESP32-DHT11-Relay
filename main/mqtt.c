@@ -226,7 +226,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = "mqtt://192.168.3.56",
+        .uri = "mqtt://192.168.3.62",
         .username = "mqtt",
         .password = "mqtt",
         .event_handle = mqtt_event_handler,
