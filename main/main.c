@@ -29,7 +29,9 @@ void dht11(){
     } else {
         int temperature = DHT11_read().temperature;
         int humidity = DHT11_read().humidity;
-        if(temperature > 0 && humidity > 0 && temperature < 100 && humidity < 100) {
+        if(!(temperature > 0 && humidity > 0 && temperature < 100 && humidity < 100)) {
+            printf("DHT Error");
+        } else {
             printf("Temperature is %d \n", temperature);
             printf("Humidity is %d\n", humidity);
             cJSON *root;
@@ -40,6 +42,7 @@ void dht11(){
             ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
             cJSON_Delete(root);
         }
+
     }
     vTaskDelete(TaskHandle_dht);  
 }
@@ -64,7 +67,7 @@ void conf_gpio(){
 static bool IRAM_ATTR timer_group_isr_callback(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
-    xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,TaskHandle_dht,0);
+    xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,TaskHandle_dht,1);
     return high_task_awoken == pdTRUE; // return whether we need to yield at the end of ISR
 }
 
@@ -98,14 +101,13 @@ void app_main(void)
       ret = nvs_flash_init();
     }
     initialise_wifi();
-    xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 6, NULL);
+    
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
-    tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
+    tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 60);
 
-    
 }
     
     

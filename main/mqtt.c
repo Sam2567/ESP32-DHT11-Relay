@@ -30,7 +30,7 @@
 
 #define GPIO_OUTPUT_IO_3     3
 #define GPIO_OUTPUT_IO_4     4
-#define MAXIMUM_RETRY 10
+#define MAXIMUM_RETRY 3
 #define WIFI_FAIL_BIT      BIT1
 #define CONNECTED_BIT      BIT0
 #define ESPTOUCH_DONE_BIT  BIT1
@@ -56,6 +56,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Retry to connect to the WIFI");
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 6, NULL);
             ESP_LOGI(TAG,"SC_task start");
         }
         ESP_LOGI(TAG,"Connect to the WIFI fail");
@@ -68,6 +69,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Retry to connect to the WIFI");
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 6, NULL);
             ESP_LOGI(TAG,"Connect to the WIFI fail");
         }
         
