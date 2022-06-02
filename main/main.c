@@ -18,7 +18,28 @@ int humidity_copy = 0;
 
 
 
-
+void check_dht_reading(int temperature, int humidity){
+    
+    int temp_value = abs(temp_copy - temperature);
+    int temp_humidity = abs(humidity_copy - humidity);
+    if(!(temperature > 0 && humidity > 0 && temperature < 100 && humidity < 100)) {
+        printf("DHT invaild values");
+    } else if(!(temp_value >=1 && temp_humidity >=1)) {
+        printf("DHT Minor change");
+    } else {
+        printf("Temperature is %d \n", temperature);
+        printf("Humidity is %d\n", humidity);
+        temp_copy = temperature;
+        humidity_copy = humidity;
+        cJSON *root;
+	    root = cJSON_CreateObject();
+        cJSON_AddNumberToObject(root, "temperature", temperature);
+        cJSON_AddNumberToObject(root, "humidity", humidity);
+        char *send_data = cJSON_Print(root);
+        ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
+        cJSON_Delete(root);
+        }
+}
 
 
 void dht11(){
@@ -28,26 +49,7 @@ void dht11(){
     } else {
         int temperature = DHT11_read().temperature;
         int humidity = DHT11_read().humidity;
-        int temp_value = abs(temp_copy - temperature);
-        int temp_humidity = abs(humidity_copy - humidity);
-        if(!(temperature > 0 && humidity > 0 && temperature < 100 && humidity < 100)) {
-            printf("DHT invaild values");
-        } else if(!(temp_value >=1 && temp_humidity >=1)) {
-            printf("DHT Minor change");
-        } else {
-            printf("Temperature is %d \n", temperature);
-            printf("Humidity is %d\n", humidity);
-            temp_copy = temperature;
-            humidity_copy = humidity;
-            cJSON *root;
-	        root = cJSON_CreateObject();
-            cJSON_AddNumberToObject(root, "temperature", temperature);
-            cJSON_AddNumberToObject(root, "humidity", humidity);
-            char *send_data = cJSON_Print(root);
-            ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
-            cJSON_Delete(root);
-        }
-
+        check_dht_reading(temperature, humidity);
     }
     vTaskDelete(TaskHandle_dht);  
 }
