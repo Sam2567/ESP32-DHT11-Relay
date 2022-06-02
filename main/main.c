@@ -12,9 +12,7 @@
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 TaskHandle_t TaskHandle_dht;
-/* FreeRTOS event group to signal when we are connected*/
-static EventGroupHandle_t s_wifi_event_group;
-esp_mqtt_client_handle_t client_init;
+
 int temp_copy = 0;
 int humidity_copy = 0;
 
@@ -100,7 +98,6 @@ static void tg_timer_init(int group, int timer, bool auto_reload, int timer_inte
 
 void app_main(void)
 {
-    
     conf_gpio();
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -108,7 +105,6 @@ void app_main(void)
       ret = nvs_flash_init();
     }
     initialise_wifi();
-    
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
