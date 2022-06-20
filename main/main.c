@@ -22,7 +22,7 @@ void check_dht_reading(int temperature, int humidity){
     
     int temp_value = abs(temp_copy - temperature);
     int temp_humidity = abs(humidity_copy - humidity);
-    if(!(temperature > 0 && humidity > 0 && temperature < 100 && humidity < 100)) {
+    if(!(temperature > 0 && humidity > 20 && temperature < 50 && humidity < 90)) {
         printf("DHT invaild values");
     } else if(!(temp_value >=1 && temp_humidity >=1)) {
         printf("DHT Minor change");
@@ -37,6 +37,7 @@ void check_dht_reading(int temperature, int humidity){
         cJSON_AddNumberToObject(root, "humidity", humidity);
         char *send_data = cJSON_Print(root);
         ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
+        free(send_data);
         cJSON_Delete(root);
         }
 }
