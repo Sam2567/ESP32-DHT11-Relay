@@ -9,6 +9,32 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <string.h>
+#include <stdint.h>
+#include <stddef.h>
+#include "freertos/event_groups.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+#include "lwip/err.h"
+#include "lwip/sys.h"
+#include "lwip/sockets.h"
+#include "lwip/dns.h"
+#include "lwip/netdb.h"
+#include "mqtt_client.h"
+#include "dht11.h"
+#include "cJSON.h"
+#include "esp_smartconfig.h"
+
+static int retry = 0;
+static const char *TAG_MQTT = "ESP Relay";
 /*
 Maximum retry for wifi
 */

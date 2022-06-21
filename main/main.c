@@ -1,8 +1,8 @@
 #include "driver/timer.h"
-#include "mqtt_client.h"
 #include "dht11.h"
 #include "cJSON.h"
-#include "mqtt.c"
+#include "mqtt.h"
+
 
 
 #define GPIO_OUTPUT_IO_3     3
@@ -12,40 +12,60 @@
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 TaskHandle_t TaskHandle_dht;
-
-int temp_copy = 0;
-int humidity_copy = 0;
-
+QueueHandle_t dht_copy_queue;
+struct dht11_copy {
+    int temp_copy;
+    int humidity_copy;
+}dht_copy;
 
 
 void check_dht_reading(int temperature, int humidity){
-    
-    int temp_value = abs(temp_copy - temperature);
-    int temp_humidity = abs(humidity_copy - humidity);
-    if(!(temperature > 0 && humidity > 20 && temperature < 50 && humidity < 90)) {
-        printf("DHT invaild values");
-    } else if(!(temp_value >=1 && temp_humidity >=1)) {
-        printf("DHT Minor change");
-    } else {
-        printf("Temperature is %d \n", temperature);
-        printf("Humidity is %d\n", humidity);
-        temp_copy = temperature;
-        humidity_copy = humidity;
-        cJSON *root;
-	    root = cJSON_CreateObject();
-        cJSON_AddNumberToObject(root, "temperature", temperature);
-        cJSON_AddNumberToObject(root, "humidity", humidity);
-        char *send_data = cJSON_Print(root);
-        ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
-        free(send_data);
-        cJSON_Delete(root);
+    struct dht11_copy px_pointer;
+    int temp_value = temperature;
+    int temp_humidity = humidity;
+    xQueueSend(dht_copy_queue, &(dht_copy),( TickType_t ) 0 );
+
+    if(dht_copy_queue != NULL) {
+        printf("Queue is not empty \n");
+        if(xQueueReceive( dht_copy_queue,&( px_pointer ),( TickType_t ) 10 ) == pdPASS){
+            //Null pointer px_pointer
+            temp_value = abs(px_pointer.temp_copy - temperature);
+            temp_humidity = abs(px_pointer.humidity_copy - humidity);
+            if(!(temperature > 0 && humidity > 20 && temperature < 50 && humidity < 90)) 
+            {
+                printf("DHT invaild values \n");
+            } 
+            else if(!(temp_value >=1 && temp_humidity >=1)) 
+            {
+                printf("DHT Minor change \n");
+            } 
+            else 
+            {
+                printf("Temperature is %d \n", temperature);
+                printf("Humidity is %d\n", humidity);
+                dht_copy.temp_copy = temperature;
+                dht_copy.humidity_copy = humidity;
+                xQueueSend(dht_copy_queue, &(dht_copy),( TickType_t ) 0 );
+                cJSON *root;
+	            root = cJSON_CreateObject();
+                cJSON_AddNumberToObject(root, "temperature", temperature);
+                cJSON_AddNumberToObject(root, "humidity", humidity);
+                char *send_data = cJSON_Print(root);
+                ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
+                free(send_data);
+                cJSON_Delete(root);
+            }
         }
+    } else {
+        printf ("Queue is empty \n");
+    }
+    
 }
 
 
 void dht11(){
     if(DHT11_read().status != 0){
-        ESP_LOGI(TAG, "DHT_ERROR");
+        ESP_LOGI(TAG_MQTT, "DHT_ERROR");
         ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", "N/A", 0, 0, true));
     } else {
         int temperature = DHT11_read().temperature;
@@ -101,6 +121,10 @@ static void tg_timer_init(int group, int timer, bool auto_reload, int timer_inte
 
 void app_main(void)
 {
+    
+    dht_copy_queue = xQueueCreate( 10, sizeof(dht_copy) );
+    dht_copy.temp_copy = 0;
+    dht_copy.humidity_copy = 0;
     conf_gpio();
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -109,7 +133,7 @@ void app_main(void)
     }
     initialise_wifi();
     ESP_ERROR_CHECK(ret);
-    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+    ESP_LOGI("Start", "ESP_WIFI_MODE_STA");
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
     tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
