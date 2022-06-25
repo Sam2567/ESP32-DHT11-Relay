@@ -51,7 +51,7 @@ void check_dht_reading(int temperature, int humidity){
                 cJSON_AddNumberToObject(root, "temperature", temperature);
                 cJSON_AddNumberToObject(root, "humidity", humidity);
                 char *send_data = cJSON_Print(root);
-                ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", send_data, 0, 0, true));
+                ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/2", send_data, 0, 0, true));
                 free(send_data);
                 cJSON_Delete(root);
             }
@@ -66,7 +66,7 @@ void check_dht_reading(int temperature, int humidity){
 void dht11(){
     if(DHT11_read().status != 0){
         ESP_LOGI(TAG_MQTT, "DHT_ERROR");
-        ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/1", "N/A", 0, 0, true));
+        ESP_ERROR_CHECK(esp_mqtt_client_publish(client_init, "mqtt/dinner/power_relay/dht11/2", "N/A", 0, 0, true));
     } else {
         int temperature = DHT11_read().temperature;
         int humidity = DHT11_read().humidity;
@@ -91,11 +91,18 @@ void conf_gpio(){
     gpio_config(&io_conf);
 }
 
-
+/*
+Make the dht task runs on core 1 if its a dual core esp32 chip
+*/
 static bool IRAM_ATTR timer_group_isr_callback(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
+    #if esp_chip_model_t != CHIP_ESP32C3
     xTaskCreatePinnedToCore (dht11,"dht_task",3000, NULL,1,TaskHandle_dht,1);
+    #else
+    xTaskCreate (dht11,"dht_task",3000, NULL,1,TaskHandle_dht);
+    #endif
+    
     return high_task_awoken == pdTRUE; // return whether we need to yield at the end of ISR
 }
 
@@ -137,6 +144,7 @@ void app_main(void)
     DHT11_init(GPIO_OUTPUT_IO_19);
     mqtt_app_start();
     tg_timer_init(TIMER_GROUP_0, TIMER_0, true, 5);
+    xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 6, NULL);
 
 }
     

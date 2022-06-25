@@ -45,6 +45,6 @@ Maximum retry for wifi
 MQTT config
 */
 
-#define RELAY_CONTROLL "mqtt/bedroom/power_relay/control/1"
-#define RELAY_STATUS "mqtt/bedroom/power_relay/1"
+#define RELAY_CONTROLL "mqtt/bedroom/power_relay/control/2"
+#define RELAY_STATUS "mqtt/bedroom/power_relay/2"
 #endif /* CONFIG_H_ */
